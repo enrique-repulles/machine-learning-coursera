@@ -17,6 +17,7 @@ training$kurtosis_yaw_forearm
 # muchos nulos, blancos y "#DIV/0!"
 
 nastrings = c("NA","","#DIV/0!")
+training <- read.csv(file.training)
 training <- read.csv(file.training, na.strings = nastrings)
 
 head(training)
@@ -33,9 +34,24 @@ library(caret)
 nearZeroVar(training, saveMetrics = TRUE)
 summary(training$amplitude_yaw_forearm)
 
-descartadas <- nearZeroVar(training)
-descartadas <-c(descartadas, 160)
+
+nullRate <- function (col) {
+  nuls <- sum(is.na(training[,col]))
+  total <- length(training[,col])
+  nuls/total
+}
+
+
+nullRate("skewness_pitch_arm")
+
+lotOfNulls <- sapply(names(training),nullRate) > .9
+
+nz <- nearZeroVar(training, saveMetrics = TRUE)
+
+descartadas <- nz$nzv | lotOfNulls | names(training) == "classe"
 validas <- names(training)[-descartadas]
+
+str(training[,-descartadas])
 
 form <- paste("classe", paste(validas, collapse=" + "), sep=" ~ ")
 
@@ -45,4 +61,7 @@ modelFitTree <- train(classe ~ skewness_pitch_arm  , method="rpart", data=traini
 
 
 nearZeroVar(training$skewness_pitch_arm)
+
+
+
 
