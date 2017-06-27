@@ -20,6 +20,8 @@ nastrings = c("NA","","#DIV/0!")
 training <- read.csv(file.training)
 training <- read.csv(file.training, na.strings = nastrings)
 
+testing <- read.csv(file.testing)
+
 head(training)
 
 
@@ -42,25 +44,37 @@ nullRate <- function (col) {
 }
 
 
-nullRate("skewness_pitch_arm")
+nullRate("amplitude_roll_arm")
 
 lotOfNulls <- sapply(names(training),nullRate) > .9
 
 nz <- nearZeroVar(training, saveMetrics = TRUE)
 
 descartadas <- nz$nzv | lotOfNulls | names(training) == "classe"
-validas <- names(training)[-descartadas]
+validas <- names(training)[!descartadas]
 
-str(training[,-descartadas])
+str(training[,validas])
 
 form <- paste("classe", paste(validas, collapse=" + "), sep=" ~ ")
 
 print(form)
 
-modelFitTree <- train(classe ~ skewness_pitch_arm  , method="rpart", data=training)
+
+modelFitTree <- train(formula(form)  , method="rpart", data=training)
+modelFitRandomForest <- train(formula(form)  , method="rf", data=training)
 
 
-nearZeroVar(training$skewness_pitch_arm)
+table(training$classe,predict(modelFitTree, training))
+table(training$classe,predict(modelFitRandomForest, training))
+
+#Para el test: 
+
+table(predict(modelFitRandomForest, training))
+
+?predict
+
+
+
 
 
 
