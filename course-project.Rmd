@@ -101,7 +101,7 @@ For the prediction, the method selected is the random forests algorithm, because
 - the outcome variable is categorical with several possible categories, thus a tree structure is more suitable than a regression.  
 
 ```{r training, warning=FALSE, message=FALSE, echo=TRUE}
-modelFit <- train(formula(form)  , method="rpart", data=training)
+modelFit <- train(formula(form)  , method="rf", data=training)
 ```
 
 The trained model has the following parameters:

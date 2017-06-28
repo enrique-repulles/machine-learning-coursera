@@ -187,29 +187,28 @@ print(form)</code></pre>
 <li>it includes cross validation and variable selection with bootstrap</li>
 <li>the outcome variable is categorical with several possible categories, thus a tree structure is more suitable than a regression.</li>
 </ul>
-<pre class="r"><code>modelFit &lt;- train(formula(form)  , method=&quot;rpart&quot;, data=training)</code></pre>
+<pre class="r"><code>modelFit &lt;- train(formula(form)  , method=&quot;rf&quot;, data=training)</code></pre>
 <p>The trained model has the following parameters:</p>
-<pre><code>## n= 14718 
+<pre><code>## 
+## Call:
+##  randomForest(x = x, y = y, mtry = param$mtry) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 40
 ## 
-## node), split, n, loss, yval, (yprob)
-##       * denotes terminal node
-## 
-##  1) root 14718 10533 A (0.28 0.19 0.17 0.16 0.18)  
-##    2) roll_belt&lt; 130.5 13448  9275 A (0.31 0.21 0.19 0.18 0.11)  
-##      4) pitch_forearm&lt; -33.55 1188    13 A (0.99 0.011 0 0 0) *
-##      5) pitch_forearm&gt;=-33.55 12260  9262 A (0.24 0.23 0.21 0.2 0.12)  
-##       10) cvtd_timestamp02/12/2011 13:33&gt;=0.5 997   238 A (0.76 0.24 0 0 0) *
-##       11) cvtd_timestamp02/12/2011 13:33&lt; 0.5 11263  8666 B (0.2 0.23 0.23 0.21 0.13)  
-##         22) magnet_dumbbell_z&lt; -31.5 3794  2374 A (0.37 0.3 0.09 0.19 0.042)  
-##           44) raw_timestamp_part_1&lt; 1.322838e+09 872    42 A (0.95 0.044 0.0046 0 0) *
-##           45) raw_timestamp_part_1&gt;=1.322838e+09 2922  1805 B (0.2 0.38 0.12 0.24 0.055) *
-##         23) magnet_dumbbell_z&gt;=-31.5 7469  5245 C (0.11 0.19 0.3 0.23 0.17) *
-##    3) roll_belt&gt;=130.5 1270    12 E (0.0094 0 0 0 0.99) *</code></pre>
+##         OOB estimate of  error rate: 0.07%
+## Confusion matrix:
+##      A    B    C    D    E  class.error
+## A 4185    0    0    0    0 0.0000000000
+## B    2 2845    1    0    0 0.0010533708
+## C    0    3 2563    1    0 0.0015582392
+## D    0    0    1 2410    1 0.0008291874
+## E    0    0    0    1 2705 0.0003695492</code></pre>
 </div>
 <div id="out-of-sample-error" class="section level1">
 <h1>Out of sample error</h1>
 <p>The estimated error from the cross validation in the training data set is:</p>
-<pre><code>## CART 
+<pre><code>## Random Forest 
 ## 
 ## 14718 samples
 ##    57 predictor
@@ -220,46 +219,46 @@ print(form)</code></pre>
 ## Summary of sample sizes: 14718, 14718, 14718, 14718, 14718, 14718, ... 
 ## Resampling results across tuning parameters:
 ## 
-##   cp          Accuracy   Kappa     
-##   0.03925757  0.4977528  0.34296978
-##   0.04446343  0.4263716  0.23119306
-##   0.11829488  0.3336425  0.07558487
+##   mtry  Accuracy   Kappa    
+##    2    0.9875960  0.9843070
+##   40    0.9984417  0.9980294
+##   79    0.9972309  0.9964980
 ## 
 ## Accuracy was used to select the optimal model using  the largest value.
-## The final value used for the model was cp = 0.03925757.</code></pre>
+## The final value used for the model was mtry = 40.</code></pre>
 <p>Finally, we use the validation data set to estimate the out-of-sample error:</p>
 <pre class="r"><code>confusionMatrix(validation$classe,predict(modelFit, validation))</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
-## Prediction   A   B   C   D   E
-##          A 908 204 281   0   2
-##          B 110 346 493   0   0
-##          C   1 103 751   0   0
-##          D   0 262 542   0   0
-##          E   0  63 465   0 373
+## Prediction    A    B    C    D    E
+##          A 1395    0    0    0    0
+##          B    0  949    0    0    0
+##          C    0    1  854    0    0
+##          D    0    0    0  804    0
+##          E    0    0    0    0  901
 ## 
 ## Overall Statistics
-##                                          
-##                Accuracy : 0.4849         
-##                  95% CI : (0.4708, 0.499)
-##     No Information Rate : 0.5163         
-##     P-Value [Acc &gt; NIR] : 1              
-##                                          
-##                   Kappa : 0.3547         
-##  Mcnemar's Test P-Value : NA             
+##                                      
+##                Accuracy : 0.9998     
+##                  95% CI : (0.9989, 1)
+##     No Information Rate : 0.2845     
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
+##                                      
+##                   Kappa : 0.9997     
+##  Mcnemar's Test P-Value : NA         
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.8911  0.35378   0.2966       NA  0.99467
-## Specificity            0.8746  0.84641   0.9562   0.8361  0.88342
-## Pos Pred Value         0.6509  0.36459   0.8784       NA  0.41398
-## Neg Pred Value         0.9684  0.84020   0.5601       NA  0.99950
-## Prevalence             0.2078  0.19943   0.5163   0.0000  0.07647
-## Detection Rate         0.1852  0.07055   0.1531   0.0000  0.07606
-## Detection Prevalence   0.2845  0.19352   0.1743   0.1639  0.18373
-## Balanced Accuracy      0.8829  0.60010   0.6264       NA  0.93904</code></pre>
+## Sensitivity            1.0000   0.9989   1.0000   1.0000   1.0000
+## Specificity            1.0000   1.0000   0.9998   1.0000   1.0000
+## Pos Pred Value         1.0000   1.0000   0.9988   1.0000   1.0000
+## Neg Pred Value         1.0000   0.9997   1.0000   1.0000   1.0000
+## Prevalence             0.2845   0.1937   0.1741   0.1639   0.1837
+## Detection Rate         0.2845   0.1935   0.1741   0.1639   0.1837
+## Detection Prevalence   0.2845   0.1935   0.1743   0.1639   0.1837
+## Balanced Accuracy      1.0000   0.9995   0.9999   1.0000   1.0000</code></pre>
 </div>
 
 
