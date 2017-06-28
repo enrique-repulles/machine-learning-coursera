@@ -23,7 +23,6 @@ nullRate <- function (col) {
 #Cleaning
 
 lotOfNulls <- sapply(names(training),nullRate) > .9
-
 nz <- nearZeroVar(training, saveMetrics = TRUE)
 
 # Quitamos tambien el numero de fila: es peligroso
@@ -33,7 +32,7 @@ validas <- names(training)[!descartadas]
 form <- paste("classe", paste(validas, collapse=" + "), sep=" ~ ")
 
 modelFitTree <- train(formula(form)  , method="rpart", data=training)
-#modelFitRandomForest <- train(formula(form)  , method="rf", data=training)
+modelFitRandomForest <- train(formula(form)  , method="rf", data=training)
 
 
 #Evaluation

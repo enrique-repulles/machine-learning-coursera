@@ -1,30 +1,128 @@
 ---
-title: "Machine Learning"
+title: "Machine Learning Assignment"
 author: "Enrique Repullés"
-date: "27 de junio de 2017"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
+# Introduction
+```{r init, echo=FALSE, warning=FALSE, message=FALSE}
+library(caret)
+
+
+nullRate <- function (col) {
+  nuls <- sum(is.na(training[,col]))
+  total <- length(training[,col])
+  nuls/total
+}
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The purpose of this study is to predict the execution way of a gym activity as performed by several participants.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The experiment consists of 10 repetitions of an "Unilateral Dumbbell Biceps Curl", and the outcome that is being clasified is how well the exercice was executed, according with the following categories: 
 
-```{r cars}
-summary(cars)
+- Class A: exactly according to the specification. 
+- Class B: throwing the elbows to the front. 
+- Class C: lifting the dumbbell only halfway. 
+- Class D: lowering the dumbbell only halfway. 
+- Class E: and throwing the hips to the front. 
+
+The variables used for the prediction come from several sensors that detect movements like skewness_pitch_arm, avg_roll_dumbbell, amplitude_yaw_forearm, etc
+
+The data is downloaded from the study in this site:  http://groupware.les.inf.puc-rio.br/har 
+
+ 
+# Data analysis and cleaning
+
+```{r load_data, echo=TRUE, warning=FALSE}
+file.training = "pml-training.csv"
+file.testing = "pml-testing.csv"
+
+nastrings = c("NA","","#DIV/0!")
+total.training <- read.csv(file.training, na.strings = nastrings)
+testing <- read.csv(file.testing)
 ```
 
-## Including Plots
+First of all, we split the data set into training and validation
+```{r data_split, warning=FALSE, echo=TRUE}
+set.seed(1111)
+inTrain <- createDataPartition(y=total.training$classe, p=.75, list=FALSE)
+training <- total.training[inTrain,]
+validation <- total.training[-inTrain,]
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+After performing some exploratory data analysis, the following points stand out:
+
+- There are several different codes identifying incomplete data: NA, empty string ("") and "#DIV/0!". We treat all these codes as NA. 
+
+- Some variables have a lot of nulls (>90%): 
+
+```{r null_proportion_table, warning=FALSE, echo=TRUE}
+hightNullRatio <- sapply(names(training),nullRate) > .9
+table(hightNullRatio)
+```
+
+- Some variables have very low variance: 
+```{r low_variance_table, warning=FALSE, echo=TRUE}
+
+nz <- nearZeroVar(training, saveMetrics = TRUE)
+table(nz$nzv)
+```
+
+- The first variable in the data file is the row number. We must discard this variable because it is not part of the experiment and is very correlated with the outcome, so the training algortihm can be misleaded by this variable.  In the following plot we show the spurious correlation between row number and the class.
+
+```{r row_number_plot, warning=FALSE, echo=TRUE}
+plot(training$classe, training$X)
+```
+
+
+# Training
+
+We discard the variables with a high level of noise: high ratio of NA, near zero variance, and the first variable (the row number)
+
+```{r feature_selection, warning=FALSE, echo=TRUE}
+discarded <- nz$nzv | hightNullRatio | names(training) == "classe" | names(training) == "X"
+
+```
+
+The selected set of variables are:
+
+```{r selected_features, warning=FALSE, echo=TRUE}
+features <- names(training)[!discarded]
+form <- paste("classe", paste(features, collapse=" + "), sep=" ~ ")
+print(form)
+```
+
+For the prediction, the method selected is the random forests algorithm, because:  
+
+- it includes cross validation and variable selection with bootstrap 
+- the outcome variable is categorical with several possible categories, thus a tree structure is more suitable than a regression.  
+
+```{r training, warning=FALSE, message=FALSE, echo=TRUE}
+modelFit <- train(formula(form)  , method="rpart", data=training)
+```
+
+The trained model has the following parameters:
+
+```{r trained_object, warning=FALSE, echo=FALSE}
+modelFit$finalModel
+```
+
+
+# Out of sample error
+The estimated error from the cross validation in the training data set is: 
+```{r estimated error, warning=FALSE, echo=FALSE}
+modelFit
+```
+
+Finally, we use the validation data set to estimate the out-of-sample error:
+```{r validation error, warning=FALSE, echo=TRUE}
+confusionMatrix(validation$classe,predict(modelFit, validation))
+
+```
+
+
+
+
